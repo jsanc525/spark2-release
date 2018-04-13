@@ -122,3 +122,4 @@ BUG FIXES
     SPARK-23518 Avoid metastore access when the users only want to read and write data frames
     SPARK-23635 Spark executor env variable is overwritten by same name AM env variable
   SPARK-23679   Setting RM_HA_URLS for AmIpFilter to avoid redirect failure in YARN mode
+  SPARK-23815   Spark writer dynamic partition overwrite mode may fail to write output on multi level partition
