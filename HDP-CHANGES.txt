@@ -86,3 +86,5 @@ BUG FIXES
   SPARK-24613   Cache with UDF could not be matched with subsequent dependent caches
   SPARK-24891   Fix HandleNullInputsForUDF rule
   SPARK-24891   Fix the Compilation Errors
+
+[BUG-123861][SPARK-23966][SS] Refactoring all checkpoint file writing logic in a common CheckpointFileManager interface
