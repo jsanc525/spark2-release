@@ -103,3 +103,6 @@ BUG FIXES
     BUG-121103 Upgrade jackson-databind to 2.9.9.1
     BUG-122130 Upgrade Jackson to 2.10.0
     [BUG-123861][SPARK-23966][SS] Refactoring all checkpoint file writing logic in a common CheckpointFileManager interface
+
+[BUG-123861][SPARK-23966][SS] Refactoring all checkpoint file writing logic in a common CheckpointFileManager interface
+[BUG-123861][SPARK-24485][SS] Measure and log elapsed time for filesystem operations in HDFSBackedStateStoreProvider
