@@ -88,3 +88,4 @@ BUG FIXES
   SPARK-24891   Fix the Compilation Errors
 
 [BUG-123861][SPARK-23966][SS] Refactoring all checkpoint file writing logic in a common CheckpointFileManager interface
+[BUG-123861][SPARK-24485][SS] Measure and log elapsed time for filesystem operations in HDFSBackedStateStoreProvider
