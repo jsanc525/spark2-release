@@ -77,3 +77,5 @@ BUG FIXES
 
     (Security fix in Apache Spark)
     BUG-110890 Fix a security issue createRDDFromFile - large object ser/deserialization between R / JVM
+
+[BUG-124009] [SPARK-26629][SS] Fixed error with multiple file stream in a query + restart on a batch that has no data for one file stream
