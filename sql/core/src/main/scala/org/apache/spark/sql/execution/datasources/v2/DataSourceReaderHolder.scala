@@ -53,8 +53,16 @@ trait DataSourceReaderHolder {
 
   override def equals(other: Any): Boolean = other match {
     case other: DataSourceReaderHolder =>
+      // if this holder is holding an HWC reader, make sure that the two holders are using the
+      // same reader
+      val readersMatch = if (reader != null && reader.getClass.getName.contains("hortonworks")) {
+        reader.equals(other.reader)
+      } else {
+        true
+      }
       canEqual(other) && metadata.length == other.metadata.length &&
-        metadata.zip(other.metadata).forall { case (l, r) => l == r }
+        metadata.zip(other.metadata).forall { case (l, r) => l == r } &&
+        readersMatch
     case _ => false
   }
 
