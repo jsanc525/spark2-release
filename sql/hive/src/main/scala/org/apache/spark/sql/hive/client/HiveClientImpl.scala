@@ -625,7 +625,7 @@ private[hive] class HiveClientImpl(
       val hivePart = getPartitionOption(catalogTable, oldSpec)
         .map { p => toHivePartition(p.copy(spec = newSpec), hiveTable) }
         .getOrElse { throw new NoSuchPartitionException(db, table, oldSpec) }
-      shim.renamePartition(client, hiveTable, oldSpec.asJava, hivePart)
+      client.renamePartition(hiveTable, oldSpec.asJava, hivePart)
     }
   }
 
