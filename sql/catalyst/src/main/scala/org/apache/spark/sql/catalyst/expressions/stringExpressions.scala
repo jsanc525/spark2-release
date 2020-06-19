@@ -194,47 +194,72 @@ case class ConcatWs(children: Seq[Expression])
         boolean ${ev.isNull} = ${ev.value} == null;
       """)
     } else {
+      val isNullArgs = ctx.freshName("isNullArgs")
+      val valueArgs = ctx.freshName("valueArgs")
+
       val array = ctx.freshName("array")
       val varargNum = ctx.freshName("varargNum")
       val idxInVararg = ctx.freshName("idxInVararg")
 
       val evals = children.map(_.genCode(ctx))
-      val (varargCount, varargBuild) = children.tail.zip(evals.tail).map { case (child, eval) =>
-        child.dataType match {
+      val (argBuild, varargCount, varargBuild) = children.tail.zip(evals.tail)
+        .zipWithIndex.map { case ((child, eval), idx) =>
+        val reprForIsNull = s"$isNullArgs[$idx]"
+        val reprForValue = s"$valueArgs[$idx]"
+
+        val arg =
+          s"""
+           ${eval.code}
+           $reprForIsNull = ${eval.isNull};
+           $reprForValue = ${eval.value};
+           """
+
+        val (varCount, varBuild) = child.dataType match {
           case StringType =>
+            val reprForValueCast = s"((UTF8String) $reprForValue)"
             ("", // we count all the StringType arguments num at once below.
              if (eval.isNull == "true") {
                ""
              } else {
-               s"$array[$idxInVararg ++] = ${eval.isNull} ? (UTF8String) null : ${eval.value};"
+               s"$array[$idxInVararg ++] = $reprForIsNull ? (UTF8String) null : $reprForValueCast;"
              })
           case _: ArrayType =>
+            val reprForValueCast = s"((ArrayData) $reprForValue)"
             val size = ctx.freshName("n")
             if (eval.isNull == "true") {
               ("", "")
             } else {
+              // scalastyle:off line.size.limit
               (s"""
-                if (!${eval.isNull}) {
-                  $varargNum += ${eval.value}.numElements();
+                if (!$reprForIsNull) {
+                  $varargNum += $reprForValueCast.numElements();
                 }
                 """,
-               s"""
-                if (!${eval.isNull}) {
-                  final int $size = ${eval.value}.numElements();
+                s"""
+                if (!$reprForIsNull) {
+                  final int $size = $reprForValueCast.numElements();
                   for (int j = 0; j < $size; j ++) {
-                    $array[$idxInVararg ++] = ${ctx.getValue(eval.value, StringType, "j")};
+                    $array[$idxInVararg ++] = ${ctx.getValue(reprForValueCast, StringType, "j")};
                   }
                 }
                 """)
+              // scalastyle:on line.size.limit
             }
         }
-      }.unzip
 
-      val codes = ctx.splitExpressionsWithCurrentInputs(evals.map(_.code))
+        (arg, varCount, varBuild)
+      }.unzip3
+
+      val argBuilds = ctx.splitExpressionsWithCurrentInputs(
+        expressions = argBuild,
+        funcName = "initializeArgsArrays",
+        extraArguments = ("boolean []", isNullArgs) :: ("Object []", valueArgs) :: Nil
+      )
 
       val varargCounts = ctx.splitExpressionsWithCurrentInputs(
         expressions = varargCount,
         funcName = "varargCountsConcatWs",
+        extraArguments = ("boolean []", isNullArgs) :: ("Object []", valueArgs) :: Nil,
         returnType = "int",
         makeSplitFunction = body =>
           s"""
@@ -247,7 +272,8 @@ case class ConcatWs(children: Seq[Expression])
       val varargBuilds = ctx.splitExpressionsWithCurrentInputs(
         expressions = varargBuild,
         funcName = "varargBuildsConcatWs",
-        extraArguments = ("UTF8String []", array) :: ("int", idxInVararg) :: Nil,
+        extraArguments = ("UTF8String []", array) :: ("int", idxInVararg) ::
+          ("boolean []", isNullArgs) :: ("Object []", valueArgs) :: Nil,
         returnType = "int",
         makeSplitFunction = body =>
           s"""
@@ -258,12 +284,15 @@ case class ConcatWs(children: Seq[Expression])
 
       ev.copy(
         s"""
-        $codes
+        boolean[] $isNullArgs = new boolean[${children.length - 1}];
+        Object[] $valueArgs = new Object[${children.length - 1}];
+        $argBuilds
         int $varargNum = ${children.count(_.dataType == StringType) - 1};
         int $idxInVararg = 0;
         $varargCounts
         UTF8String[] $array = new UTF8String[$varargNum];
         $varargBuilds
+        ${evals.head.code}
         UTF8String ${ev.value} = UTF8String.concatWs(${evals.head.value}, $array);
         boolean ${ev.isNull} = ${ev.value} == null;
       """)
