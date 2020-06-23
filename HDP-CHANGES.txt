@@ -77,3 +77,5 @@ BUG FIXES
 
     (Security fix in Apache Spark)
     BUG-110890 Fix a security issue createRDDFromFile - large object ser/deserialization between R / JVM
+
+    BUG-123876 BUG-123771 Two plans are different if their HWC readers are different
